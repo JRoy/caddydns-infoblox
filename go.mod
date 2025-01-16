@@ -3,7 +3,7 @@ module github.com/JRoy/caddydns-infoblox
 go 1.23
 
 require (
-	github.com/JRoy/libdns-infoblox v0.0.0-20250116202115-6fcf4cc432c6 // indirect
+	github.com/JRoy/libdns-infoblox v0.0.0-20250116203021-e11081cf5ea9 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/caddyserver/caddy/v2 v2.9.1 // indirect
 	github.com/caddyserver/certmagic v0.21.6 // indirect
