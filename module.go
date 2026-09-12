@@ -20,11 +20,11 @@ func init() {
 }
 
 func (p *Provider) Provision(ctx caddy.Context) error {
-	p.Provider.Host = caddy.NewReplacer().ReplaceAll(p.Provider.Host, "")
-	p.Provider.Version = caddy.NewReplacer().ReplaceAll(p.Provider.Version, "")
-	p.Provider.Username = caddy.NewReplacer().ReplaceAll(p.Provider.Username, "")
-	p.Provider.Password = caddy.NewReplacer().ReplaceAll(p.Provider.Password, "")
-	p.Provider.View = caddy.NewReplacer().ReplaceAll(p.Provider.View, "")
+	p.Host = caddy.NewReplacer().ReplaceAll(p.Host, "")
+	p.Version = caddy.NewReplacer().ReplaceAll(p.Version, "")
+	p.Username = caddy.NewReplacer().ReplaceAll(p.Username, "")
+	p.Password = caddy.NewReplacer().ReplaceAll(p.Password, "")
+	p.View = caddy.NewReplacer().ReplaceAll(p.View, "")
 	return nil
 }
 
@@ -38,31 +38,31 @@ func (p *Provider) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 			switch d.Val() {
 			case "host":
 				if d.NextArg() {
-					p.Provider.Host = d.Val()
+					p.Host = d.Val()
 				} else {
 					return d.ArgErr()
 				}
 			case "version":
 				if d.NextArg() {
-					p.Provider.Version = d.Val()
+					p.Version = d.Val()
 				} else {
 					return d.ArgErr()
 				}
 			case "username":
 				if d.NextArg() {
-					p.Provider.Username = d.Val()
+					p.Username = d.Val()
 				} else {
 					return d.ArgErr()
 				}
 			case "password":
 				if d.NextArg() {
-					p.Provider.Password = d.Val()
+					p.Password = d.Val()
 				} else {
 					return d.ArgErr()
 				}
 			case "view":
 				if d.NextArg() {
-					p.Provider.View = d.Val()
+					p.View = d.Val()
 				} else {
 					return d.ArgErr()
 				}
@@ -72,7 +72,7 @@ func (p *Provider) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 		}
 	}
 
-	if p.Provider.Host == "" || p.Provider.Version == "" || p.Provider.Username == "" || p.Provider.Password == "" {
+	if p.Host == "" || p.Version == "" || p.Username == "" || p.Password == "" {
 		return d.Err("missing config!")
 	}
 
