@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    # Once a month, on the first day of the month at midnight UTC, to catch any
+    # breaking changes in Caddy that may have been released since the last run.
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - run: go mod download
+      - name: go.mod / go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+      - run: go vet ./...
+      - run: go build ./...
+      - run: go test -race -coverprofile=coverage.out ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  xcaddy:
+    # Proves the module still plugs into Caddy via xcaddy and registers its
+    # DNS provider. Matrix pins the minimum supported Caddy plus whatever is
+    # current, so a breaking Caddy release shows up here.
+    name: xcaddy build (caddy ${{ matrix.caddy }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        caddy: ["v2.10.0", "latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Install xcaddy
+        run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+      - name: Build Caddy with this plugin
+        env:
+          # "latest" -> empty positional arg (xcaddy picks the newest release).
+          CADDY_VERSION: ${{ matrix.caddy == 'latest' && '' || matrix.caddy }}
+        run: |
+          xcaddy build $CADDY_VERSION \
+            --with github.com/JRoy/caddydns-infoblox="$PWD" \
+            --output ./caddy-with-infoblox
+      - name: DNS provider module is registered
+        run: |
+          ./caddy-with-infoblox list-modules
+          ./caddy-with-infoblox list-modules | grep -qE '(^|\s)dns\.providers\.infoblox(\s|$)'

@@ -1,0 +1,43 @@
+name: dependabot
+
+# Gate for Dependabot's auto-merged PRs: build Caddy via xcaddy against the
+# dependency versions the PR proposes and confirm the DNS provider still
+# registers. If a bump breaks the Caddy build, this check fails and the PR
+# does not merge.
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  xcaddy:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: Install xcaddy
+        run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
+      - name: Build Caddy with the versions this PR proposes
+        run: |
+          # xcaddy defaults to Caddy @latest; pin it to whatever the PR bumps
+          # go.mod to, so the proposed Caddy version is what actually gets built.
+          caddy_version="$(go list -m -f '{{.Version}}' github.com/caddyserver/caddy/v2)"
+          echo "Building against Caddy $caddy_version"
+          xcaddy build "$caddy_version" \
+            --with github.com/JRoy/caddydns-infoblox="$PWD" \
+            --output ./caddy
+      - name: DNS provider module is registered
+        run: ./caddy list-modules | grep -qE '(^|\s)dns\.providers\.infoblox(\s|$)'
+      # Reached only if every step above passed. Enables GitHub auto-merge on
+      # the PR; GitHub merges it once required checks are green.
+      - name: Enable auto-merge
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
